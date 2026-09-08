@@ -402,9 +402,13 @@
                             window.location.href = '/word_list';
                         }
                     } else {
-                        response.json().then(data => {
-                            alert('错误: ' + (data.error || '添加单词失败'));
-                        });
+                        response.json()
+                            .then(data => {
+                                alert('错误: ' + (data.error || '添加单词失败'));
+                            })
+                            .catch(() => {
+                                alert('错误: 服务器返回 ' + response.status + ' 错误，单词未保存');
+                            });
                     }
                 })
                 .catch(error => {

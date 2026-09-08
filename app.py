@@ -83,8 +83,12 @@ def create_app(config_name=None):
             source = request.headers.get('Origin') or request.headers.get('Referer')
             if source:
                 source_host = urlparse(source).netloc
-                if source_host and source_host != request.host:
+                # 比较时去掉端口号，避免 "host:5000" vs "host" 的误判
+                def _strip_port(h):
+                    return h.rsplit(':', 1)[0] if ':' in h else h
+                if source_host and _strip_port(source_host) != _strip_port(request.host):
                     return jsonify({'success': False, 'error': '请求来源不合法'}), 403
+
 
         return None
 
