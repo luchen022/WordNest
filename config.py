@@ -77,6 +77,9 @@ class Config:
     
     # 应用配置
     DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+    # 开发服务器监听地址：默认仅本机；暴露到局域网时设为 0.0.0.0
+    HOST = os.environ.get('HOST', '127.0.0.1')
+    PORT = int(os.environ.get('PORT', '5000'))
     
     @staticmethod
     def get_database_uri(list_name='words'):
@@ -124,5 +127,5 @@ class ProductionConfig(Config):
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': Config
 }

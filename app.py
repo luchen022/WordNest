@@ -193,6 +193,14 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    # 从环境变量获取调试模式设置
-    debug_mode = os.environ.get('DEBUG', 'True').lower() == 'true'
-    app.run(debug=debug_mode)
+    # 监听地址、端口与调试模式均可通过环境变量配置
+    host = app.config.get('HOST', '127.0.0.1')
+    port = app.config.get('PORT', 5000)
+    debug_mode = app.config.get('DEBUG', False)
+
+    if host == '0.0.0.0':
+        print(f'WordNest 正在监听所有网卡：http://<本机IP>:{port}')
+        if not app.config.get('AUTH_ENABLED', True):
+            print('警告：服务已暴露到网络，但认证处于关闭状态，请谨慎使用。')
+
+    app.run(host=host, port=port, debug=debug_mode)

@@ -223,6 +223,20 @@ export WORDNEST_PASSWORD_HASH="$(python -c 'from werkzeug.security import genera
 
 > 如果既没有设置 `WORDNEST_PASSWORD` 也没有设置 `WORDNEST_PASSWORD_HASH`，应用启动时会自动生成一个临时密码并打印在日志中。
 
+## 🌐 网络监听
+
+开发服务器默认只监听本机 `127.0.0.1:5000`，外部设备无法访问。需要让局域网内其他设备访问时：
+
+```bash
+HOST=0.0.0.0 PORT=5000 DEBUG=False uv run python app.py
+```
+
+- `HOST`：监听地址，默认 `127.0.0.1`；设为 `0.0.0.0` 表示监听所有网卡。
+- `PORT`：监听端口，默认 `5000`。
+- `DEBUG`：调试模式，默认 `False`；暴露到网络时务必保持关闭，否则 Werkzeug 调试器存在远程代码执行风险。
+
+> 暴露到网络前请确认已设置登录密码，并检查服务器防火墙 / 安全组是否放行对应端口。
+
 ## 📖 使用指南
 
 ### 📝 你的专属单词手账
