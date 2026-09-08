@@ -43,7 +43,7 @@ def get_current_list():
 def switch_list():
     """切换到指定的单词列表"""
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         if not data:
             return jsonify({'error': '请求数据为空'}), 400
             
@@ -71,7 +71,7 @@ def switch_list():
 def create_list():
     """创建新的单词列表"""
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         if not data:
             return jsonify({'error': '请求数据为空'}), 400
             
@@ -152,7 +152,7 @@ def rename_list():
 def delete_list():
     """删除单词列表（只有空列表才能删除）"""
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         if not data:
             return jsonify({'error': '请求数据为空'}), 400
             

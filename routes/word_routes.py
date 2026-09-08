@@ -71,7 +71,7 @@ def get_marked_only_status():
 @word_bp.route('/toggle_marked_only', methods=['POST'])
 def toggle_marked_only():
     """切换是否只抽查标注单词的设置"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
     settings = load_settings()
     settings['marked_only'] = data.get('marked_only', False)
     save_settings(settings)
@@ -119,24 +119,57 @@ def word_list():
     return render_template('word_list.html', words=words)
 
 
+def _extract_word_payload(req):
+    """从 request 中提取 word 和 definitions 数据，兼容 JSON 和普通 Form 提交"""
+    data = req.get_json(silent=True)
+    if data and isinstance(data, dict):
+        word = str(data.get('word', '')).strip()
+        definitions = data.get('definitions', [])
+        return word, definitions
+    
+    # 兼容传统表单提交
+    word = req.form.get('word', '').strip()
+    part_of_speech_list = req.form.getlist('part_of_speech')
+    meaning_list = req.form.getlist('meaning')
+    example_list = req.form.getlist('example')
+    note_list = req.form.getlist('note')
+    
+    definitions = []
+    for i in range(len(part_of_speech_list)):
+        if i < len(meaning_list) and part_of_speech_list[i] and meaning_list[i]:
+            definitions.append({
+                'part_of_speech': part_of_speech_list[i].strip(),
+                'meaning': meaning_list[i].strip(),
+                'example': example_list[i].strip() if i < len(example_list) else '',
+                'note': note_list[i].strip() if i < len(note_list) else ''
+            })
+    return word, definitions
+
+
 @word_bp.route('/add_word', methods=['GET', 'POST'])
 def add_word():
     """添加新单词"""
     if request.method == 'GET':
         return render_template('add_word.html')
     
-    # 处理POST请求
-    data = request.json
+    # 安全处理POST请求（兼容 JSON 和表单）
+    word, definitions = _extract_word_payload(request)
     
     # 检查单词是否为空
-    if not data['word'] or data['word'].strip() == '':
+    if not word:
         return jsonify({'error': '单词不能为空'}), 400
     
+    if not definitions:
+        return jsonify({'error': '请至少填写一个词义'}), 400
+    
     # 添加单词
-    if not WordService.add_word(data['word'], data['definitions']):
+    if not WordService.add_word(word, definitions):
         return jsonify({'error': '单词已存在'}), 400
     
-    return jsonify({'success': True})
+    # 如果是传统页面提交则重定向，如果是 JSON 请求则返回 JSON
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json':
+        return jsonify({'success': True})
+    return redirect(url_for('word.word_list'))
 
 
 @word_bp.route('/edit_word/<word>', methods=['GET', 'POST'])
@@ -149,12 +182,18 @@ def edit_word(word):
         return render_template('edit_word.html', word=word_data.to_dict())
     
     # 处理POST请求
-    data = request.json
+    new_word, definitions = _extract_word_payload(request)
+    if not new_word:
+        return jsonify({'error': '单词不能为空'}), 400
+    if not definitions:
+        return jsonify({'error': '请至少填写一个词义'}), 400
     
-    if not WordService.update_word(word, data['word'], data['definitions']):
+    if not WordService.update_word(word, new_word, definitions):
         return jsonify({'error': '更新失败，可能是单词已存在'}), 400
     
-    return jsonify({'success': True})
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json':
+        return jsonify({'success': True})
+    return redirect(url_for('word.word_list'))
 
 
 @word_bp.route('/add_definition/<word>', methods=['GET', 'POST'])
@@ -167,12 +206,17 @@ def add_definition(word):
         return render_template('add_definition.html', word=word_data.to_dict())
     
     # 处理POST请求
-    data = request.json
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    
+    if not data.get('part_of_speech') or not data.get('meaning'):
+        return jsonify({'error': '词性和释义为必填项'}), 400
     
     if not WordService.add_definition(word, data):
         return jsonify({'error': '未找到该单词'}), 404
     
-    return jsonify({'success': True})
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json':
+        return jsonify({'success': True})
+    return redirect(url_for('word.word_list'))
 
 
 @word_bp.route('/delete_word/<word>', methods=['GET', 'POST'])
@@ -181,7 +225,7 @@ def delete_word(word):
     if not WordService.delete_word(word):
         return jsonify({'error': '未找到该单词'}), 404
     
-    if request.method == 'GET':
+    if request.method == 'GET' or not (request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'):
         return redirect(url_for('word.word_list'))
     return jsonify({'success': True})
 
@@ -228,7 +272,7 @@ def export_words():
 @word_bp.route('/generate_example', methods=['POST'])
 def generate_example():
     """使用大模型生成例句"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
     word = data.get('word', '')
     part_of_speech = data.get('part_of_speech', '')
     meaning = data.get('meaning', '')
@@ -247,7 +291,7 @@ def generate_example():
 @word_bp.route('/generate_note', methods=['POST'])
 def generate_note():
     """使用大模型生成笔记"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
     word = data.get('word', '')
     part_of_speech = data.get('part_of_speech', '')
     meaning = data.get('meaning', '')
@@ -266,7 +310,7 @@ def generate_note():
 @word_bp.route('/ai_fill_word', methods=['POST'])
 def ai_fill_word():
     """使用AI一键填充单词的完整信息（支持多重释义）"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
     word = data.get('word', '')
     
     if not word:
