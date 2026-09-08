@@ -33,14 +33,18 @@ class GraphService:
             f"开始为单词 '{focus_word}' 生成知识图谱关系 (类型: {relation_type}, 深度: {depth})"
         )
         
-        # 准备API调用的headers
-        api_key = current_app.config.get('DEEPSEEK_API_KEY')
-        base_url = current_app.config.get('DEEPSEEK_BASE_URL')
+        # 获取AI配置
+        from utils import get_ai_config, build_chat_completions_url
+        ai_config = get_ai_config()
+        api_key = ai_config.get('api_key', '')
+        base_url = ai_config.get('base_url', 'https://api.deepseek.com')
+        model = ai_config.get('model', 'deepseek-chat')
         
         headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Content-Type": "application/json"
         }
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         
         # 构建提示词
         relation_type_desc = "所有类型的关系" if relation_type == 'all' else GraphService.get_relation_label(relation_type)
@@ -64,9 +68,9 @@ class GraphService:
         if relation_type != 'all':
             prompt += f"\n\n只返回{GraphService.get_relation_label(relation_type)}类型的关系，其他类型返回空数组。"
         
-        # 调用Deepseek API
+        # 调用大模型 API
         data = {
-            "model": "deepseek-chat",
+            "model": model,
             "messages": [
                 {"role": "user", "content": prompt}
             ],
@@ -75,13 +79,14 @@ class GraphService:
         }
         
         try:
-            current_app.logger.info(f"正在发送请求到 Deepseek API: {base_url}/v1/chat/completions")
+            url = build_chat_completions_url(base_url)
+            current_app.logger.info(f"正在发送请求到大模型 API: {url} (模型: {model})")
             
-            # 禁用代理以解决连接问题
             response = requests.post(
-                f"{base_url}/v1/chat/completions", 
+                url, 
                 headers=headers, 
                 json=data,
+                timeout=30,
                 proxies={"http": None, "https": None}
             )
             

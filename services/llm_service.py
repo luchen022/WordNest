@@ -5,6 +5,7 @@
 import json
 import requests
 from flask import current_app
+from utils import get_ai_config, build_chat_completions_url
 
 
 class LLMService:
@@ -13,7 +14,7 @@ class LLMService:
     @staticmethod
     def _call_deepseek_api(messages, response_format=None):
         """
-        调用DeepSeek API
+        调用大语言模型 API
         
         Args:
             messages: 消息列表
@@ -23,21 +24,24 @@ class LLMService:
             API响应内容，失败返回None
         """
         try:
-            api_key = current_app.config.get('DEEPSEEK_API_KEY')
-            base_url = current_app.config.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+            ai_config = get_ai_config()
+            api_key = ai_config.get('api_key', '')
+            base_url = ai_config.get('base_url', 'https://api.deepseek.com')
+            model = ai_config.get('model', 'deepseek-chat')
             
-            if not api_key:
-                current_app.logger.error("未配置DEEPSEEK_API_KEY")
-                return None
+            # 本地模型（如 localhost / 127.0.0.1）可能无需 api_key，云端则建议配置
+            if not api_key and not ('localhost' in base_url or '127.0.0.1' in base_url):
+                current_app.logger.warning("未配置大模型 API Key，请在网页设置中配置")
             
-            url = f"{base_url}/chat/completions"
+            url = build_chat_completions_url(base_url)
             headers = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {api_key}'
+                'Content-Type': 'application/json'
             }
+            if api_key:
+                headers['Authorization'] = f'Bearer {api_key}'
             
             data = {
-                'model': 'deepseek-chat',
+                'model': model,
                 'messages': messages,
                 'temperature': 0.7
             }
@@ -45,7 +49,14 @@ class LLMService:
             if response_format:
                 data['response_format'] = response_format
             
-            response = requests.post(url, headers=headers, json=data, timeout=30)
+            response = requests.post(url, headers=headers, json=data, timeout=30, proxies={"http": None, "https": None})
+            
+            # 兼容某些不支持 response_format 的本地模型或代理
+            if response.status_code == 400 and response_format:
+                current_app.logger.info("模型可能不支持 response_format，尝试普通格式调用...")
+                data.pop('response_format', None)
+                response = requests.post(url, headers=headers, json=data, timeout=30, proxies={"http": None, "https": None})
+                
             response.raise_for_status()
             
             result = response.json()
@@ -53,7 +64,7 @@ class LLMService:
             
             return content
         except Exception as e:
-            current_app.logger.error(f"调用DeepSeek API时出错: {str(e)}")
+            current_app.logger.error(f"调用 LLM API 时出错: {str(e)}")
             return None
     
     @staticmethod

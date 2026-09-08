@@ -52,7 +52,7 @@ class AIService:
     @staticmethod
     def call_llm(messages: List[Dict[str, str]], stream: bool = False) -> Any:
         """
-        调用DeepSeek LLM
+        调用大语言模型 LLM
         
         Args:
             messages: 对话消息列表
@@ -61,35 +61,42 @@ class AIService:
         Returns:
             API响应（流式或完整）
         """
-        api_key = current_app.config.get('DEEPSEEK_API_KEY')
-        base_url = current_app.config.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+        from utils import get_ai_config, build_chat_completions_url
         
-        if not api_key:
-            raise ValueError("未配置DEEPSEEK_API_KEY")
+        ai_config = get_ai_config()
+        api_key = ai_config.get('api_key', '')
+        base_url = ai_config.get('base_url', 'https://api.deepseek.com')
+        model = ai_config.get('model', 'deepseek-chat')
+        
+        if not api_key and not ('localhost' in base_url or '127.0.0.1' in base_url):
+            raise ValueError("未配置大模型 API Key，请在网页设置中配置")
         
         headers = {
-            'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
+        if api_key:
+            headers['Authorization'] = f'Bearer {api_key}'
         
         payload = {
-            'model': 'deepseek-chat',
+            'model': model,
             'messages': messages,
             'stream': stream,
             'temperature': 0.3,  # 降低温度以提高准确性
             'max_tokens': 2000
         }
         
+        url = build_chat_completions_url(base_url)
         response = requests.post(
-            f'{base_url}/v1/chat/completions',
+            url,
             headers=headers,
             json=payload,
             stream=stream,
-            timeout=30
+            timeout=30,
+            proxies={"http": None, "https": None}
         )
         
         if response.status_code != 200:
-            raise Exception(f"API请求失败: {response.status_code}")
+            raise Exception(f"API请求失败: HTTP {response.status_code} - {response.text}")
         
         return response
     

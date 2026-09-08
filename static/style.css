@@ -251,11 +251,44 @@
     stroke: var(--text-color);
 }
 
-/* 退出登录按钮样式 */
-.logout-btn {
+/* AI 设置按钮样式 */
+.ai-settings-btn {
     position: fixed;
     top: 20px;
     left: 70px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--card-bg);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.ai-settings-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.ai-settings-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--text-color);
+    fill: none;
+}
+
+/* 退出登录按钮样式（默认排在设置按钮右侧） */
+.logout-btn {
+    position: fixed;
+    top: 20px;
+    left: 120px;
     z-index: 100;
     display: flex;
     align-items: center;
@@ -279,15 +312,23 @@
     stroke: var(--text-color);
 }
 
+/* 针对 word_list 页面的多按钮排版适配 */
+.page-word-list .ai-settings-btn {
+    left: 120px;
+}
+.page-word-list .logout-btn {
+    left: 170px;
+}
+
 @media (max-width: 768px) {
-    .theme-toggle-btn {
+    .ai-settings-btn {
         width: 36px;
         height: 36px;
         top: 15px;
-        left: 15px;
+        left: 58px;
     }
     
-    .theme-toggle-btn svg {
+    .ai-settings-btn svg {
         width: 18px;
         height: 18px;
     }
@@ -296,8 +337,22 @@
         width: 36px;
         height: 36px;
         top: 15px;
-        left: 61px;
+        left: 101px;
     }
+
+    .logout-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .page-word-list .ai-settings-btn {
+        left: 101px;
+    }
+    
+    .page-word-list .logout-btn {
+        left: 144px;
+    }
+}
 
     .logout-btn svg {
         width: 18px;
@@ -1849,4 +1904,345 @@ textarea:valid {
 .dark-mode .speak-btn:hover {
     background-color: var(--primary-hover);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-} 
+}
+
+/* AI 设置模态框样式 */
+.ai-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.ai-modal-backdrop.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.ai-modal-card {
+    background-color: var(--card-bg, #fff);
+    color: var(--text-color, #333);
+    border-radius: 16px;
+    width: 92%;
+    max-width: 560px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border-color, #e9ecef);
+    overflow: hidden;
+    animation: aiModalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes aiModalPop {
+    0% { transform: scale(0.92); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.ai-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border-color, #eee);
+}
+
+.ai-modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-modal-title-wrap h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-color, #333);
+}
+
+.ai-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-secondary, #999);
+    transition: color 0.2s ease, transform 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.ai-modal-close:hover {
+    color: var(--danger-color, #e64c5c);
+    transform: scale(1.1);
+}
+
+.ai-modal-body {
+    padding: 18px 22px;
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ai-preset-section {
+    background-color: var(--table-header-bg, #f8f9fa);
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px dashed var(--border-color, #dee2e6);
+}
+
+.ai-preset-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary, #666);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.ai-preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ai-chip {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color, #ced4da);
+    background-color: var(--card-bg, #fff);
+    color: var(--text-color, #444);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-chip:hover, .ai-chip.active {
+    background-color: var(--primary-color, #4a6cf7);
+    color: #fff;
+    border-color: var(--primary-color, #4a6cf7);
+    transform: translateY(-1px);
+}
+
+.ai-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ai-form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color, #333);
+}
+
+.ai-required {
+    color: var(--danger-color, #e64c5c);
+}
+
+.ai-input {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border, #ced4da);
+    background-color: var(--input-bg, #fff);
+    color: var(--text-color, #333);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-input:focus {
+    border-color: var(--primary-color, #4a6cf7);
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+}
+
+.ai-input-action-wrap {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.ai-input-action-wrap input {
+    padding-right: 42px;
+}
+
+.ai-action-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.ai-action-btn:hover {
+    opacity: 1;
+}
+
+.ai-field-tip {
+    font-size: 12px;
+    color: var(--text-secondary, #888);
+}
+
+.ai-key-hint.text-success { color: var(--success-color, #28a745); font-weight: 500; }
+.ai-key-hint.text-warning { color: var(--warning-color, #d39e00); font-weight: 500; }
+.ai-key-hint.text-error { color: var(--danger-color, #e64c5c); font-weight: 500; }
+.ai-key-hint.text-muted { color: var(--text-secondary, #888); }
+
+.ai-result-box {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    word-break: break-all;
+    animation: fadeIn 0.2s ease-in;
+}
+
+.ai-result-success {
+    background-color: rgba(40, 167, 69, 0.12);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: var(--success-color, #28a745);
+}
+
+.ai-result-error {
+    background-color: rgba(230, 76, 92, 0.12);
+    border: 1px solid rgba(230, 76, 92, 0.3);
+    color: var(--danger-color, #e64c5c);
+}
+
+.ai-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border-color, #eee);
+    background-color: var(--table-header-bg, #fcfcfc);
+}
+
+.ai-modal-footer-right {
+    display: flex;
+    gap: 10px;
+}
+
+.ai-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ai-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ai-btn-primary {
+    background-color: var(--primary-color, #4a6cf7);
+    color: #fff;
+}
+
+.ai-btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover, #3951c6);
+    transform: translateY(-1px);
+}
+
+.ai-btn-cancel {
+    background-color: transparent;
+    color: var(--text-color, #666);
+    border-color: var(--border-color, #ced4da);
+}
+
+.ai-btn-cancel:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.ai-btn-outline {
+    background-color: transparent;
+    color: var(--primary-color, #4a6cf7);
+    border-color: var(--primary-color, #4a6cf7);
+}
+
+.ai-btn-outline:hover:not(:disabled) {
+    background-color: rgba(74, 108, 247, 0.08);
+}
+
+.ai-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    display: inline-block;
+    animation: aiSpin 0.7s infinite linear;
+}
+
+@keyframes aiSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 夜间模式模态框适配 */
+.dark-mode .ai-modal-card {
+    background-color: var(--card-bg, #1e1e1e);
+    border-color: var(--border-color, #333);
+}
+
+.dark-mode .ai-modal-header,
+.dark-mode .ai-modal-footer {
+    border-color: var(--border-color, #333);
+    background-color: var(--table-header-bg, #252525);
+}
+
+.dark-mode .ai-preset-section {
+    background-color: var(--table-header-bg, #252525);
+    border-color: var(--border-color, #444);
+}
+
+.dark-mode .ai-chip {
+    background-color: var(--card-bg, #1e1e1e);
+    border-color: var(--border-color, #444);
+    color: var(--text-color, #ddd);
+}
+
+.dark-mode .ai-chip:hover,
+.dark-mode .ai-chip.active {
+    background-color: var(--primary-color, #6d8fff);
+    border-color: var(--primary-color, #6d8fff);
+    color: #fff;
+}
+
+.dark-mode .ai-input {
+    background-color: var(--input-bg, #2a2a2a);
+    border-color: var(--input-border, #444);
+    color: var(--text-color, #fff);
+}
+
+.dark-mode .ai-btn-cancel {
+    border-color: var(--border-color, #444);
+    color: var(--text-color, #ccc);
+}
+
+.dark-mode .ai-btn-cancel:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.08);
+}
