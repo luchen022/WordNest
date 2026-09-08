@@ -2,12 +2,63 @@
 应用配置文件
 """
 import os
+import secrets
+from datetime import timedelta
+
+
+def _load_secret_key():
+    """
+    获取用于签名 session 的密钥。
+
+    优先级：环境变量 SECRET_KEY > instance/.secret_key > 新生成的随机密钥。
+    随机密钥会持久化到 instance/.secret_key，避免每次重启后登录状态失效。
+    """
+    env_key = os.environ.get('SECRET_KEY')
+    if env_key:
+        return env_key
+
+    instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+    key_path = os.path.join(instance_dir, '.secret_key')
+
+    try:
+        with open(key_path, 'r', encoding='utf-8') as f:
+            key = f.read().strip()
+            if key:
+                return key
+    except OSError:
+        pass
+
+    key = secrets.token_hex(32)
+    try:
+        os.makedirs(instance_dir, exist_ok=True)
+        with open(key_path, 'w', encoding='utf-8') as f:
+            f.write(key)
+        os.chmod(key_path, 0o600)
+    except OSError:
+        pass
+    return key
 
 
 class Config:
     """基础配置类"""
     # Flask配置
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'word_list_secret_key'
+    SECRET_KEY = _load_secret_key()
+
+    # Session 安全配置
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    # 仅在 HTTPS 环境下开启（本地 http 访问需保持 False）
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+
+    # 认证配置
+    AUTH_ENABLED = os.environ.get('AUTH_ENABLED', 'True').lower() == 'true'
+    AUTH_USERNAME = os.environ.get('WORDNEST_USERNAME', 'admin')
+    # 推荐使用哈希（WORDNEST_PASSWORD_HASH）；也支持明文（WORDNEST_PASSWORD）
+    AUTH_PASSWORD_HASH = os.environ.get('WORDNEST_PASSWORD_HASH', '')
+    AUTH_PASSWORD = os.environ.get('WORDNEST_PASSWORD', '')
+    AUTH_MAX_ATTEMPTS = int(os.environ.get('AUTH_MAX_ATTEMPTS', '5'))
+    AUTH_LOCKOUT_SECONDS = int(os.environ.get('AUTH_LOCKOUT_SECONDS', '300'))
     
     # 数据库配置
     # 默认数据库URI，可以通过set_database_uri动态修改

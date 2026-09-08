@@ -197,6 +197,32 @@ python app.py
    
    恭喜！你的专属单词手账上线啦！(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧
 
+## 🔐 登录认证
+
+项目默认开启登录认证，所有页面和接口都需要登录后才能访问。
+
+**配置方式**（通过环境变量）：
+
+```bash
+# 用户名，默认 admin
+export WORDNEST_USERNAME=admin
+
+# 方式一：明文密码（启动时会自动转成哈希）
+export WORDNEST_PASSWORD=你的密码
+
+# 方式二：密码哈希（更安全，推荐）
+export WORDNEST_PASSWORD_HASH="$(python -c 'from werkzeug.security import generate_password_hash; print(generate_password_hash("你的密码"))')"
+```
+
+其他可选配置：
+
+- `AUTH_ENABLED`：是否开启认证，默认 `True`；设为 `False` 可关闭（仅建议本地使用）。
+- `SECRET_KEY`：session 签名密钥；未设置时自动生成并保存到 `instance/.secret_key`。
+- `SESSION_COOKIE_SECURE`：HTTPS 部署时设为 `True`。
+- `AUTH_MAX_ATTEMPTS` / `AUTH_LOCKOUT_SECONDS`：登录失败次数上限与锁定时长，默认 5 次 / 300 秒。
+
+> 如果既没有设置 `WORDNEST_PASSWORD` 也没有设置 `WORDNEST_PASSWORD_HASH`，应用启动时会自动生成一个临时密码并打印在日志中。
+
 ## 📖 使用指南
 
 ### 📝 你的专属单词手账

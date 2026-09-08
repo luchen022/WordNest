@@ -3,9 +3,22 @@ Flask应用主入口
 使用应用工厂模式
 """
 import os
-from flask import Flask, session, g
+from urllib.parse import urlparse
+
+from flask import Flask, jsonify, redirect, request, session, url_for
 from config import config
 from models import db
+
+
+def _wants_json():
+    """判断当前请求是否期望 JSON 响应（如前端 fetch / API 调用）。"""
+    return (
+        request.path.startswith('/api/')
+        or request.is_json
+        or request.accept_mimetypes.best == 'application/json'
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        or request.headers.get('Sec-Fetch-Mode') == 'cors'
+    )
 
 
 def create_app(config_name=None):
@@ -44,6 +57,37 @@ def create_app(config_name=None):
     # 初始化单词数据库
     db.init_app(app)
     
+    # 认证守卫：未登录用户一律跳转登录页（静态资源、favicon 与登录页除外）
+    @app.before_request
+    def require_login():
+        """全站登录校验，并对写操作做同源校验。"""
+        if not app.config.get('AUTH_ENABLED', True):
+            return None
+
+        endpoint = request.endpoint or ''
+        if endpoint in ('auth.login', 'static', 'word.favicon'):
+            return None
+
+        if not session.get('logged_in'):
+            if _wants_json():
+                return jsonify({
+                    'success': False,
+                    'error': '未登录',
+                    'login_url': url_for('auth.login'),
+                }), 401
+            next_target = request.full_path if request.query_string else request.path
+            return redirect(url_for('auth.login', next=next_target))
+
+        # 轻量 CSRF 防护：写操作校验请求来源与当前站点同源
+        if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            source = request.headers.get('Origin') or request.headers.get('Referer')
+            if source:
+                source_host = urlparse(source).netloc
+                if source_host and source_host != request.host:
+                    return jsonify({'success': False, 'error': '请求来源不合法'}), 403
+
+        return None
+
     # 添加请求前处理函数，根据session中的当前列表动态切换数据库
     @app.before_request
     def before_request():

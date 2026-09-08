@@ -1,0 +1,11 @@
+[project]
+name = "wordnest"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "flask==2.2.5",
+    "flask-sqlalchemy==3.0.3",
+    "pyttsx3>=2.99",
+    "requests>=2.34.2",
+    "werkzeug==2.2.3",
+]

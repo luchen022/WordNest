@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 单词自测系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            padding: 40px 32px;
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+        .login-card h1 {
+            margin: 0 0 8px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--text-color);
+            text-align: center;
+        }
+        .login-card .subtitle {
+            margin: 0 0 28px;
+            font-size: 0.9rem;
+            color: #8fa5c0;
+            text-align: center;
+        }
+        .login-field {
+            margin-bottom: 18px;
+        }
+        .login-field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        .login-field input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+            border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .login-field input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: #fff;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .login-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        .login-alert {
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            border-radius: 10px;
+            background-color: rgba(220, 53, 69, 0.12);
+            color: #d64545;
+        }
+        .login-alert.info {
+            background-color: rgba(74, 144, 226, 0.12);
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h1>单词自测系统</h1>
+            <p class="subtitle">请登录后继续使用</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="login-alert{% if category == 'info' %} info{% endif %}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="post" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+                <div class="login-field">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+                </div>
+                <div class="login-field">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="login-btn">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 跟随系统深浅色偏好，与主站视觉保持一致
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+</body>
+</html>
